@@ -1,0 +1,18 @@
+.header {
+  margin: 5% 0;
+}
+.header__title {
+  width: 180px;
+  margin: 2% 0;
+}
+
+.header__hr {
+  border-color: #545454;
+  width: 100%;
+}
+
+@media screen and (max-width: 320px) {
+  .header__title {
+    width: 124px;
+  }
+}
