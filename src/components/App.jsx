@@ -11,7 +11,7 @@ import Footer from "./Footer/Footer.jsx";
 import CurrentUserContext from "../contexts/CurrentUserContext.js";
 import "../../index.css";
 
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import Login from './Login.jsx';
 import Register from './Register.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
@@ -34,8 +34,11 @@ function App() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);  
+
   const [infoTooltipOpen, setInfoTooltipOpen] = useState(false);  
   const [tooltipMessage, setTooltipMessage] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   const [cards, setCards] = useState([
     {
@@ -58,9 +61,22 @@ function App() {
     },
   ]);
 
-  console.log(cards);
+  
 
   useEffect(() => {
+    const jwt = localStorage.getItem("token");
+
+    if (jwt) {
+      getUserInfo(jwt)
+      .then(({username, email}) => {
+        setIsLoggedIn(true);
+        setCurrentUser({username, email});
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      })
+    }
+
     const handleEscKey = (evt) => {
       if (evt.key === "Escape") {
         closeAllPopups();
@@ -148,88 +164,133 @@ function App() {
     setIsDeletePopupOpen(false);
   }
 
+  
+
+  const getUserInfo = async (token) => {
+    try {
+      const response = await fetch('https://se-register-api.en.tripleten-services.com/v1/users/me', {
+        method: "GET",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if(response.ok) {
+        const userData = await response.json();
+        return userData;
+      } else {
+        throw new error("No se pudo obtener la información del usuario");
+      }
+    }catch (error) {    
+        console.error("Error al obtener la información del usuario:", error);  
+            throw error;    }  }
+    
+  
+
   const handleSignup = async (email, password) => {
     const result = await signup(email, password);
     if(result.success) {
       setTooltipMessage("Registro exitoso");
       setInfoTooltipOpen(true);
-      setIsAuthenticated(true);
+      setIsLoggedIn(true);
+    } else {
+      setTooltipMessage("Error en el registro");
+      setInfoTooltipOpen(true);
     }
   };
 
   const handleSignin = async (email, password) => {
     const result = await signin(email, password);
     if(result.success) {
-      setIsAuthenticated(true);
+      localStorage.setItem("token", result.token);
+      const userInfo = await getUserInfo(result.token);
+      setCurrentUser(userInfo);
+      setIsLoggedIn(true);
+      navigate("/");
+    }else {
+      setTooltipMessage("Error en la autorización");
+      setInfoTooltipOpen(true);
     }
-  }
+  };
 
-  return (
-    <CurrentUserContext.Provider value={currentUser}>
-     
-      <div className="page">
-        <Header />
-        <Routes>        
-           <Route path="/signup" element={<Register onRegister={handleSignup} />} />         
-           <Route path="/signin" element={<Login onLogin={handleSignin} />} />
-            
-          <ProtectedRoute 
-            path="/"
-            element={
-        <>
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+    navigate("/signin");
+  };
 
-        <Main
-          cards={cards}
-          onEditProfileClick={handleEditProfileClick}
-          onAddPlaceClick={handleAddPlaceClick}
-          onEditAvatarClick={handleEditAvatarClick}
-          onCardClick={handleCardClick}
-          onCardLike={handleCardLike}
-          onCardDelete={handleDeletePopupClick}
-
-        />
-
-        <EditProfile
-          isOpen={isEditProfilePopupOpen}
-          onClose={closeAllPopups}
-          onUpdateUser={onUpdateUser}
-        />
-
-        <ConfirmDeletePopup
-          isOpen={isDeletePopupOpen}
-          onClose={closeAllPopups}
-          onConfirmDelete={handleCardDelete}
-        ></ConfirmDeletePopup>
-
-        <AddPlacePopup
-          isOpen={isAddPlacePopupOpen}
-          onClose={closeAllPopups}
-          onAddPlaceSubmit={handleAddPlaceSubmit}
-        ></AddPlacePopup>
-
-        <EditAvatar
-          isOpen={isEditAvatarPopupOpen}
-          onClose={closeAllPopups}
-          onUpdateAvatar={handleUpdateAvatar}
-        />
-        <ImagePopup card={selectedCard} onClose={closeAllPopups} />        
-         </>           
-         }          
-        isAuthenticated={isAuthenticated}       
-        />        
-         <Route path="*" element={<Navigate to="/signin" />} />    
-        </Routes>        
-        <InfoTooltip        
-           isOpen={infoTooltipOpen}         
-           message={tooltipMessage}         
-           onClose={() => setInfoTooltipOpen(false)}      
-           />      
-         <Footer />     
-         </div>   
-          
-       </CurrentUserContext.Provider>
-      );
-     }
-                      
-     export default App;
+  return (  
+      <CurrentUserContext.Provider value={currentUser}>  
+          <div className="page">    
+      
+          <Header onSignOut={handleSignOut} />     
+          <Routes>         
+             <Route path="/signup" element={<Register onRegister={handleSignup} />} />      
+             <Route path="/signin" element={<Login onLogin={handleSignin} />} />        
+             <Route path="/" element={          
+                <ProtectedRoute isAuthenticated={isLoggedIn}>          
+                  <>           
+                        
+               <Main             
+                 cards={cards}         
+                 onEditProfileClick={() => setIsEditProfilePopupOpen(true)}            
+                 onAddPlaceClick={() => setIsAddPlacePopupOpen(true)}            
+                 onEditAvatarClick={() => setIsEditAvatarPopupOpen(true)}              
+                 onCardClick={setSelectedCard}                
+                 onCardLike={handleCardLike}                 
+                 onCardDelete={(card) => {                   
+                 setCardToDelete(card);                  
+                 setIsDeletePopupOpen(true);           
+                  }}              
+                      />             
+                               
+               <EditProfile        
+                  isOpen={isEditProfilePopupOpen}             
+                  onClose={closeAllPopups}                 
+                  onUpdateUser={setCurrentUser}           
+                   />             
+              
+               <ConfirmDeletePopup          
+                  isOpen={isDeletePopupOpen}            
+                  onClose={closeAllPopups}            
+                  onConfirmDelete={handleCardDelete}         
+                   />               
+                   
+               <AddPlacePopup             
+                  isOpen={isAddPlacePopupOpen}            
+                  onClose={closeAllPopups}               
+                  onAddPlaceSubmit={handleAddPlaceSubmit}         
+                   />             
+                   
+               <EditAvatar             
+                  isOpen={isEditAvatarPopupOpen}           
+                  onClose={closeAllPopups}               
+                  onUpdateAvatar={handleUpdateAvatar}        
+                    />              
+                    
+               <ImagePopup card={selectedCard} onClose={closeAllPopups} />     
+                   </>         
+               </ProtectedRoute>        
+                 } />        
+               <Route path="*" element={<Navigate to="/signin" />} />    
+              
+               </Routes>       
+               
+               <InfoTooltip      
+                  isOpen={infoTooltipOpen}        
+                  message={tooltipMessage}    
+                  onClose={() => setInfoTooltipOpen(false)}    
+                    />       
+                    
+               <Footer />   
+               
+                 </div>   
+                 
+                </CurrentUserContext.Provider>  );
+                
+              }
+  
+  
+              export default App;
 

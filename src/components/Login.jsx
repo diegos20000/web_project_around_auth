@@ -2,7 +2,7 @@ import React, { useState } from "react";
 
 const Login = ({onLogin}) => {
     const [email, setEmail] = useState("");
-    cont [password, setPassword] = useState("");
+    const [password, setPassword] = useState("");
 
     const handleSubmit = (e) => {
         e.preventDefault();
