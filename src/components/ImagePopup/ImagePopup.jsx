@@ -6,7 +6,7 @@ export default function ImagePopup({ card, onClose }) {
     <div className={`popup popup__image ${card ? "active" : ""}`}>
       <div className="popup__image-container">
         <button
-          className="pop-up__close-button"
+          className="popup-image__close"
           id="popup__close_img"
           onClick={onClose}
         >

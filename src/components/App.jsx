@@ -27,10 +27,7 @@ function App() {
   const [selectedCard, setSelectedCard] = useState(null);
   const [cardToDelete, setCardToDelete] = useState(null);
   const [currentUser, setCurrentUser] = useState({
-    name: "Diego Rodrigo Cano",
-    about: "Web Developer Junior",
-    avatar:
-      "https://media.licdn.com/dms/image/v2/C4E03AQEgdIWRh2TM9Q/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1613487742717?e=1738800000&v=beta&t=iZfGysB4ySqFIfoveiW0m22UBCVVHzL6MLLIRXLGZMM",
+    
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);  

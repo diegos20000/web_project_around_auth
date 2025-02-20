@@ -32,7 +32,7 @@ export default function EditAvatar({ onClose, isOpen, onUpdateAvatar }) {
     >
       <fieldset className="profile__img">
         <input
-          className="pop-up__form-item pop-up__form-item-about popup__input"
+          className="pop-up__form-item pop-up__form-item-about popup__input-avatar"
           type="url"
           placeholder="URL de la imagen"
           id="link"
