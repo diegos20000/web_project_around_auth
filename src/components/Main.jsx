@@ -25,7 +25,7 @@ export default function Main({
       <div
         className="profile"
         id="profile__avatar_update"
-        //style={{ backgroundImage: `url(${currentUser.avatar})` }}
+        style={{ backgroundImage: `url(${currentUser.avatar})` }}
       >
         <img
           src={currentUser.avatar}

@@ -8,16 +8,17 @@ export default function EditAvatar({ onClose, isOpen, onUpdateAvatar }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-
-    const defaultSubmitText = buttonText;
     setButtonText("Guardando...");
 
     await onUpdateAvatar({
       avatar: avatarRef.current.value,
     });
+
+    setButtonText("Guardar");
   }
 
   useEffect(() => {
+    avatarRef.current.value = "";
     setButtonText("Guardar");
   }, [isOpen]);
 

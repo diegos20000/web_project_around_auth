@@ -29,9 +29,10 @@
   width: 35px;
   background: none;
   border-style: none;
-  
+  position: fixed;
   color: black;
-  float: right;
+  margin-top: -100px;
+  
 }
 .pop-up__close-button {
   cursor: pointer;
@@ -42,7 +43,7 @@
   margin-left: 20%;
   margin-bottom: 15%;
   color: black;
-  position: absolute;
+  position: fixed;
   
   
 }

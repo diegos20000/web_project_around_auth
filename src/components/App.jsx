@@ -17,6 +17,8 @@ import Register from './Register.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import InfoTooltip from './InfoTooltip.jsx';
 import { signup, signin } from '../utils/auth.js';
+const BASE_URL = "https://se-register-api.en.tripleten-services.com/v1";
+
 
 function App() {
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = useState(false);
@@ -144,8 +146,35 @@ function App() {
     setSelectedCard(card);
   }
 
-  const handleUpdateAvatar = (data) => {
-    console.log("Actualizando avatar:", data);
+  const handleUpdateAvatar = async (data) => {
+    const token = localStorage.getItem("token");
+    console.log("Token:", token);
+    try {
+      
+      const response = await fetch(`${BASE_URL}/users/me/avatar`, {
+        method: "PATCH",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          avatar: data.avatar,
+        }),
+      });
+      
+      if(response.ok) {
+        const updatedUser = await response.json();
+        setCurrentUser((prevState) => ({
+          ...prevState,
+          avatar: updatedUser.avatar,
+        }));
+        closeAllPopups();
+      } else {
+        throw new Error("Error al actualizar avatar");
+      }
+    } catch(error) {
+      console.log("Error updating avatar:", error);
+    }
   };
 
   function onUpdateUser(user) {
@@ -187,6 +216,12 @@ function App() {
   const handleSignup = async (email, password) => {
     const result = await signup(email, password);
     if(result.success) {
+      const registeredEmails = JSON.parse
+      (localStorage.getItem("registeredEmails")) || [];
+      registeredEmails.push(email);
+      localStorage.setItem("registeredEmails", JSON.stringify(registeredEmails));
+      console.log("Correos electrónicos registrados:", registeredEmails);
+
       setTooltipMessage("Registro exitoso");
       setInfoTooltipOpen(true);
       setIsLoggedIn(true);
@@ -197,6 +232,13 @@ function App() {
   };
 
   const handleSignin = async (email, password) => {
+    const registeredEmails = JSON.parse(localStorage.getItem("registeredEmails")) || [];
+    if (!registeredEmails.includes(email)) {
+      setTooltipMessage("El correo electrónico no está registrado");
+      setInfoTooltipOpen(true);
+      return;
+    }
+
     const result = await signin(email, password);
     if(result.success) {
       localStorage.setItem("token", result.token);
@@ -205,7 +247,7 @@ function App() {
       setIsLoggedIn(true);
       navigate("/");
     }else {
-      setTooltipMessage("Error en la autorización");
+      setTooltipMessage(result.message || "Error en la autorización");
       setInfoTooltipOpen(true);
     }
   };
@@ -221,7 +263,7 @@ function App() {
       <CurrentUserContext.Provider value={currentUser}>  
           <div className="page">    
       
-          <Header onSignOut={handleSignOut} />     
+          <Header onSignOut={handleSignOut} isLoggedIn={isLoggedIn} />     
           <Routes>         
              <Route path="/signup" element={<Register onRegister={handleSignup} />} />      
              <Route path="/signin" element={<Login onLogin={handleSignin} />} />        
