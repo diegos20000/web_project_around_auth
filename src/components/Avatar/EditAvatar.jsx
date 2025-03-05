@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import avatarImage from "../../images/explorer.jpg";
 
 import PopupWithForm from "../PopupWithForm";
 
@@ -35,7 +36,7 @@ export default function EditAvatar({ onClose, isOpen, onUpdateAvatar }) {
         <input
           className="pop-up__form-item pop-up__form-item-about popup__input-avatar"
           type="url"
-          placeholder="URL de la imagen"
+          placeholder="URL"
           id="link"
           name="link"
           ref={avatarRef}

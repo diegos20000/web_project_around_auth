@@ -3,7 +3,7 @@ import editButton from "../images/Edit Button.jpg";
 import trashButton from "../images/trashicons.png";
 import addButton from "../images/Rectangle.jpg";
 import AddPlacePopup from "./AddPlacePopup.jsx";
-
+import avatarImage from "../images/explorer.jpg"
 import Card from "./Card/Card.jsx";
 
 import CurrentUserContext from "../contexts/CurrentUserContext.js";
@@ -28,7 +28,7 @@ export default function Main({
         style={{ backgroundImage: `url(${currentUser.avatar})` }}
       >
         <img
-          src={currentUser.avatar}
+          src={avatarImage}
           alt="Avatar de usuario"
           className="profile__img"
           onClick={onEditAvatarClick}

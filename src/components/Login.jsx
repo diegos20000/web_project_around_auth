@@ -6,12 +6,19 @@ const Login = ({onLogin}) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate();
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
         onLogin(email, password);
-        navigate("/");
+        setIsModalOpen(true);
+        
     };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        navigate("/")
+    }
 
     return (  
     <div id="container">
@@ -38,8 +45,11 @@ const Login = ({onLogin}) => {
             navigate("/signup")} style={{ cursor: 'pointer', color: 'blue'
              }}
              >Regístrate aquí</span>     
-              </p>  
+              </p>
+             
           </form>
+          
+          
           </div>
           );
      };
