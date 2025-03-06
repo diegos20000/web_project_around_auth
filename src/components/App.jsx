@@ -17,6 +17,10 @@ import Register from './Register.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import InfoTooltip from './InfoTooltip.jsx';
 import { signup, signin } from '../utils/auth.js';
+
+import checkImage from "../images/check.png";
+import errorImage from "../images/x.png";
+
 const BASE_URL = "https://se-register-api.en.tripleten-services.com/v1";
 
 
@@ -33,7 +37,7 @@ function App() {
   });
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);  
-
+  const [tooltipLogo, setTooltipLogo] = useState('');
   const [infoTooltipOpen, setInfoTooltipOpen] = useState(false);  
   const [tooltipMessage, setTooltipMessage] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -222,11 +226,13 @@ function App() {
       localStorage.setItem("registeredEmails", JSON.stringify(registeredEmails));
       console.log("Correos electrónicos registrados:", registeredEmails);
 
-      setTooltipMessage("Registro exitoso");
+      setTooltipMessage("¡Correcto! Ya estás registrado.");
+      setTooltipLogo(checkImage);
       setInfoTooltipOpen(true);
       setIsLoggedIn(true);
     } else {
-      setTooltipMessage("Error en el registro");
+      setTooltipMessage("Uy, algo salió mal. Por favor, inténtalo de nuevo.");
+      setTooltipLogo(errorImage);
       setInfoTooltipOpen(true);
     }
   };
@@ -234,7 +240,8 @@ function App() {
   const handleSignin = async (email, password) => {
     const registeredEmails = JSON.parse(localStorage.getItem("registeredEmails")) || [];
     if (!registeredEmails.includes(email)) {
-      setTooltipMessage("El correo electrónico no está registrado");
+      setTooltipMessage("Uy, algo salió mal. Por favor, inténtalo de nuevo.");
+      setTooltipLogo(errorImage);
       setInfoTooltipOpen(true);
       return;
     }
@@ -247,7 +254,8 @@ function App() {
       setIsLoggedIn(true);
       navigate("/");
     }else {
-      setTooltipMessage(result.message || "Error en la autorización");
+      setTooltipMessage( "Uy, algo salió mal. Por favor, inténtalo de nuevo.");
+      setTooltipLogo(errorImage);
       setInfoTooltipOpen(true);
     }
   };
@@ -318,8 +326,10 @@ function App() {
                
                <InfoTooltip      
                   isOpen={infoTooltipOpen}        
-                  message={tooltipMessage}    
-                  onClose={() => setInfoTooltipOpen(false)}    
+                  message={tooltipMessage}
+                  logo={tooltipLogo} 
+                  onClose={() => setInfoTooltipOpen(false)}   
+                     
                     />       
                     
                <Footer />   

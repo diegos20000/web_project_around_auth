@@ -1,15 +1,21 @@
 import react from "react";
+import closeButtonImage from "../images/Close Icon.jpg";
 
-const InfoTooltip = ({isOpen, message, onClose}) => {
+const InfoTooltip = ({isOpen, message, logo, onClose}) => {
     return (   
          isOpen && (      
          <div className="modal">      
-           <div className="modal-content">        
-              <p>{message}</p>       
-                 <button onClick={onClose}>Cerrar</button>       
-                  </div>   
-                     </div>  
-                       )  
-                    );
-                };
-    export default InfoTooltip
+         <div className="modal-content">
+         <button className="close-button" onClick={onClose}>
+            <img src={closeButtonImage} alt="cerrar" />
+         </button>
+            <img src={logo} alt="Logo"/>        
+         <p>{message}</p>       
+              
+      </div>   
+   </div>  
+      )  
+    );
+};
+    
+export default InfoTooltip;
