@@ -1,27 +1,28 @@
 import React, { useState, useEffect } from "react";
 import Header from "./Header/Header.jsx";
 import Main from "./Main.jsx";
-import Card from "./Card/Card.jsx";
+import Card from "../components/Card/Card.jsx";
 import ConfirmDeletePopup from "./ConfirmDeletePopup.jsx";
 import ImagePopup from "./ImagePopup/ImagePopup.jsx";
 import EditProfile from "./EditProfile/EditProfile.jsx";
 import EditAvatar from "./Avatar/EditAvatar.jsx";
 import AddPlacePopup from "./AddPlacePopup.jsx";
 import Footer from "./Footer/Footer.jsx";
-import CurrentUserContext from "../contexts/CurrentUserContext.js";
+import {CurrentUserContext} from "../contexts/CurrentUserContext.jsx";
 import "../../index.css";
-
+import { setToken, getToken } from "../utils/token.js";
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import Login from './Login.jsx';
 import Register from './Register.jsx';
 import ProtectedRoute from './ProtectedRoute.jsx';
 import InfoTooltip from './InfoTooltip.jsx';
-import { signup, signin } from '../utils/auth.js';
+import auth from "../utils/auth.js";
+import api from "../utils/api.js";
 
 import checkImage from "../images/check.png";
 import errorImage from "../images/x.png";
 
-const BASE_URL = "https://se-register-api.en.tripleten-services.com/v1";
+const BASE_URL = "https://xyzzz.chickenkiller.com";
 
 
 function App() {
@@ -32,9 +33,7 @@ function App() {
   //const [cards, setCards] = useState([]);
   const [selectedCard, setSelectedCard] = useState(null);
   const [cardToDelete, setCardToDelete] = useState(null);
-  const [currentUser, setCurrentUser] = useState({
-    
-  });
+  const [currentUser, setCurrentUser] = useState({});
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);  
   const [tooltipLogo, setTooltipLogo] = useState('');
@@ -43,26 +42,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
-  const [cards, setCards] = useState([
-    {
-      isLiked: false,
-      _id: "5d1f0611d321eb4bdcd707dd",
-      name: "Yosemite Valley",
-      link: "https://practicum-content.s3.us-west-1.amazonaws.com/web-code/moved_yosemite.jpg",
-      owner: "5d1f0611d321eb4bdcd707dd",
-      createdAt: "2019-07-05T08:10:57.741Z",
-      likes: [],
-    },
-    {
-      isLiked: false,
-      _id: "5d1f064ed321eb4bdcd707de",
-      name: "Lake Louise",
-      link: "https://practicum-content.s3.us-west-1.amazonaws.com/web-code/moved_lake-louise.jpg",
-      owner: "5d1f0611d321eb4bdcd707dd",
-      createdAt: "2019-07-05T08:11:58.324Z",
-      likes: [],
-    },
-  ]);
+  const [cards, setCards] = useState([]);
 
   
 
@@ -70,14 +50,14 @@ function App() {
     const jwt = localStorage.getItem("token");
 
     if (jwt) {
-      getUserInfo(jwt)
-      .then(({username, email}) => {
-        setIsLoggedIn(true);
-        setCurrentUser({username, email});
+      getUserInfo()
+        .then(userInfo => {
+          setIsLoggedIn(true);
+          setCurrentUser(userInfo);
       })
       .catch(() => {
         localStorage.removeItem("token");
-      })
+      });
     }
 
     const handleEscKey = (evt) => {
@@ -107,52 +87,74 @@ function App() {
   function handleCardLike(card) {
     const likes = card.likes || [];
     const isLiked = likes.some((i) => i._id === currentUser._id);
-    const updatedCards = cards.map((c) => {
-      if (c._id === card._id) {
-        return {
-          ...c,
-          likes: isLiked
-            ? likes.filter((i) => i._id !== currentUser._id)
-            : [...likes, currentUser],
-        };
-      }
-      return c;
+
+    api.changeLikeCardStatus(card._id, !isLiked)
+    .then((updatedCard) => {
+      const updatedCards = cards.map((c) => {
+      if (c._id === updatedCard._id) {
+        return updatedCard;
+    }
+    return c;
     });
     setCards(updatedCards);
+  })
+  .catch((error) => {
+    console.error("Error al cambiar el estado del like:", error);
+  });
   }
+
+
   async function handleCardDelete() {
+    console.log("Delete confirmation received for card:", cardToDelete);
+
     if (!cardToDelete) {
+      console.error("No card selected for deletion.");
       return;
     }
+
+    try {
+      console.log("Attempting to delete card:", cardToDelete._id);
+      await api.deleteCard(cardToDelete._id);
+
     setCards((prevCards) =>
-      prevCards.filter((card) => card._id !== cardToDelete._id)
-    );
-    setCardToDelete(null);
-    setIsDeletePopupOpen(false);
+      prevCards.filter((card) => card._id !== cardToDelete._id));
+      setCardToDelete(null);
+      setIsDeletePopupOpen(false);
+    } catch (error) {
+      console.error("Error deleting card:", error);
+    } 
+    
   }
   function handleAddPlaceClick() {
     setIsAddPlacePopupOpen(true);
   }
 
-  function handleAddPlaceSubmit({ link, name }) {
-    const newCard = {
-      _id: Date.now().toString(),
-      link,
-      name,
-      isLiked: false,
-      likes: [],
-    };
+  async function handleAddPlaceSubmit({ link, name }) {
+    
+    try {
+    const newCard = await api.createCard(link, name);
+    console.log("Nueva tarjeta creada:", newCard);
     setCards((prevCards) => [newCard, ...prevCards]);
     closeAllPopups();
+  } catch (error) {
+    console.error("Error al crear la tarjeta:", error);
   }
+  }
+  
 
   function handleCardClick(card) {
     setSelectedCard(card);
   }
 
   const handleUpdateAvatar = async (data) => {
-    const token = localStorage.getItem("token");
-    console.log("Token:", token);
+    const token = getToken();
+    
+
+    if (!token) {
+      console.error("No token found. User may not be logged in.");
+      return;
+    }
+
     try {
       
       const response = await fetch(`${BASE_URL}/users/me/avatar`, {
@@ -161,10 +163,10 @@ function App() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          avatar: data.avatar,
-        }),
+        body: JSON.stringify(data),
       });
+
+      console.log("Response Status:", response.status);
       
       if(response.ok) {
         const updatedUser = await response.json();
@@ -174,10 +176,12 @@ function App() {
         }));
         closeAllPopups();
       } else {
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
         throw new Error("Error al actualizar avatar");
       }
     } catch(error) {
-      console.log("Error updating avatar:", error);
+      
     }
   };
 
@@ -196,72 +200,72 @@ function App() {
 
   
 
-  const getUserInfo = async (token) => {
+  const getUserInfo = async () => {
     try {
-      const response = await fetch('https://se-register-api.en.tripleten-services.com/v1/users/me', {
-        method: "GET",
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if(response.ok) {
-        const userData = await response.json();
-        return userData;
-      } else {
-        throw new error("No se pudo obtener la información del usuario");
-      }
-    }catch (error) {    
-        console.error("Error al obtener la información del usuario:", error);  
-            throw error;    }  }
+      const userInfo = await auth.getUserInfo();
+      return userInfo;
+    } catch (error) {
+      console.error("Error al obtener la información del usuario:", error);
+      throw error;
+    }
+  };
     
   
 
   const handleSignup = async (email, password) => {
-    const result = await signup(email, password);
-    if(result.success) {
+    
+    try {
       const registeredEmails = JSON.parse
       (localStorage.getItem("registeredEmails")) || [];
+      const result = await auth.register(email, password);
+
+      if (result.token) {
+        setToken(result.token);
+      }
+
       registeredEmails.push(email);
       localStorage.setItem("registeredEmails", JSON.stringify(registeredEmails));
-      console.log("Correos electrónicos registrados:", registeredEmails);
+      
 
       setTooltipMessage("¡Correcto! Ya estás registrado.");
       setTooltipLogo(checkImage);
       setInfoTooltipOpen(true);
       setIsLoggedIn(true);
-    } else {
+    } catch (error) {
       setTooltipMessage("Uy, algo salió mal. Por favor, inténtalo de nuevo.");
       setTooltipLogo(errorImage);
       setInfoTooltipOpen(true);
+       console.error("Error en la registración:", error);
     }
   };
 
   const handleSignin = async (email, password) => {
-    const registeredEmails = JSON.parse(localStorage.getItem("registeredEmails")) || [];
-    if (!registeredEmails.includes(email)) {
-      setTooltipMessage("Uy, algo salió mal. Por favor, inténtalo de nuevo.");
-      setTooltipLogo(errorImage);
-      setInfoTooltipOpen(true);
-      return;
-    }
+    
+    try {
 
-    const result = await signin(email, password);
-    if(result.success) {
-      localStorage.setItem("token", result.token);
-      const userInfo = await getUserInfo(result.token);
+      const user = await auth.login(email, password);
+
+      if (user.token) {
+        setToken(user.token);
+        
+      } else {
+        throw new Error("No se recibió un token.");
+      }
+
+      const userInfo = await getUserInfo();
       setCurrentUser(userInfo);
       setIsLoggedIn(true);
       navigate("/");
-    }else {
+    } catch (error) {
       setTooltipMessage( "Uy, algo salió mal. Por favor, inténtalo de nuevo.");
       setTooltipLogo(errorImage);
       setInfoTooltipOpen(true);
+      console.error("Error en el inicio de sesión:", error);
     }
   };
 
   const handleSignOut = () => {
-    localStorage.removeItem("token");
+    auth.logout();
     setIsLoggedIn(false);
     setCurrentUser(null);
     navigate("/signin");
@@ -278,7 +282,7 @@ function App() {
              <Route path="/" element={          
                 <ProtectedRoute isAuthenticated={isLoggedIn}>          
                   <>           
-                        
+                       
                <Main             
                  cards={cards}         
                  onEditProfileClick={() => setIsEditProfilePopupOpen(true)}            
@@ -287,10 +291,11 @@ function App() {
                  onCardClick={setSelectedCard}                
                  onCardLike={handleCardLike}                 
                  onCardDelete={(card) => {                   
-                 setCardToDelete(card);                  
-                 setIsDeletePopupOpen(true);           
-                  }}              
-                      />             
+                  setCardToDelete(card);
+                  console.log("Card set for deletion:", card);                  
+                  setIsDeletePopupOpen(true);           
+                }}              
+                  />             
                                
                <EditProfile        
                   isOpen={isEditProfilePopupOpen}             
@@ -301,7 +306,8 @@ function App() {
                <ConfirmDeletePopup          
                   isOpen={isDeletePopupOpen}            
                   onClose={closeAllPopups}            
-                  onConfirmDelete={handleCardDelete}         
+                  onConfirmDelete={handleCardDelete}
+                  buttonText="Eliminar"         
                    />               
                    
                <AddPlacePopup             

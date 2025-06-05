@@ -1,47 +1,87 @@
-const BASE_URL = "https://se-register-api.en.tripleten-services.com/v1";
+import { setToken, getToken, removeToken } from "./token";
 
-export const signup = async (email, password) => {
-  try {  
-    const response = await fetch(`${BASE_URL}/signup`, {
-      method: 'POST',   
-      headers: {       
-         'Content-Type': 'application/json', 
-     },  
-      body: JSON.stringify({ email, password }),
-  });   
-  if (!response.ok) {   
-   const errorData = await response.json(); 
-     console.error("Error en el registro:", errorData);  
-     return { success: false, message: errorData.message || "Error en el registro" };   
-     } 
-
-     const data = await response.json();
-     return { success: true, data };
-     } catch (error) {  
-     console.error("Error en la conexión:", error);  
-     return { success: false, message: "Error en la conexión" };
+class Auth {
+  constructor({BASE_URL}) {
+    this.BASE_URL = BASE_URL;
   }
+
+
+async _request(endpoint, method = "GET", body = null) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+if (token) {
+  headers["Authorization"] = `Bearer ${token}`;
+  
+}else {       
+  console.error("Token no proporcionado.");   
+ }
+
+const options = {
+  method,
+  headers,
+  ...(body && { body: JSON.stringify(body) }),
 };
 
-export const signin = async (email, password) => {
-    try {  
-      const response = await fetch(`${BASE_URL}/signin`, {
-        method: 'POST',   
-        headers: {       
-             'Content-Type': 'application/json', 
-       },  
-        body: JSON.stringify({ email, password }),
-    });   
-    if (!response.ok) {   
-        const errorData = await response.json(); 
-          console.error("Error en el registro:", errorData);  
-          return { success: false, message: errorData.message || "Error en la autenticación" };   
-          } 
+try {
+  const res = await fetch(`${this.BASE_URL}${endpoint}`, options);
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || res.statusText);
+  }
+  return await res.json();
+} catch (error) {
+  console.error("Error en la solicitud:", error);
+  throw new Error("Error en la comunicación con el servidor");
+}
+}
 
-          const data = await response.json();
-          return { success: true, token: data.token };
-          } catch (error) {  
-          console.error("Error en la conexión:", error);  
-          return { success: false, message: "Error en la conexión" };
-       }
-  };
+async register(email, password) {
+  
+  try {
+    const data = await this._request("/signup", "POST", { email, password });
+     if (data.token) {
+      setToken(data.token);
+     }
+     return data;
+  } catch (error) {
+    console.error("Error en la registración:", error);
+    throw error;
+  }
+}
+
+async login (email, password) {
+  try {
+    const data = await this._request("/signin", "POST", { email, password });
+    if (data.token) {
+      setToken(data.token);
+    }
+    console.log(data);
+    return data;
+  } catch (error) {
+    console.error("Error en el acceso:", error);
+    throw error;
+  }
+}
+
+logout() {
+  removeToken();
+}
+
+async getUserInfo() {
+  try {
+    return await this._request("/users/me", "GET");
+  } catch (error) {
+    console.error("Error al obtener información del usuario:", error);
+    throw error;
+  }
+}
+}
+
+const auth = new Auth({
+  BASE_URL: "https://api.xyzzz.chickenkiller.com",
+});
+
+export default auth;
